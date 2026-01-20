@@ -1,5 +1,5 @@
-// src/api/professorApi.js
 import api from "./axiosConfig";
 
-export const getProfessor = () => api.get("/professor");
-export const updateProfessor = (data) => api.put("/professor", data);
+export const getProfessors = () => api.get("/professors");
+export const createProfessor = (p) => api.post("/professors", p);
+export const deleteProfessor = (id) => api.delete(`/professors/${id}`);

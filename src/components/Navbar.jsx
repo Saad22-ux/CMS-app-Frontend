@@ -8,7 +8,7 @@ export default function Navbar() {
             <Link className="hover:text-blue-500" to="/">Dashboard</Link>
             <Link className="hover:text-blue-500" to="/courses">Courses</Link>
             <Link className="hover:text-blue-500" to="/users">Users</Link>
-            <Link className="hover:text-blue-500" to="/professor">Professor</Link>
+            <Link className="hover:text-blue-500" to="/professors">Professor</Link>
         </nav>
     );
 }

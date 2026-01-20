@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCourses } from "../api/courseApi";
 import { getUsers } from "../api/userApi";
-import { getProfessor } from "../api/professorApi";
+import { getProfessors } from "../api/professorApi";
 
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer
@@ -15,7 +15,7 @@ export default function Dashboard() {
     useEffect(() => {
         getCourses().then(res => setCourses(res.data));
         getUsers().then(res => setUsers(res.data));
-        getProfessor().then(res => setProfessor(res.data));
+        getProfessors().then(res => setProfessor(res.data));
     }, []);
 
     // Users per course
