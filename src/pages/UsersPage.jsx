@@ -41,7 +41,7 @@ export default function UsersPage() {
             })
             .catch(err => {
                 console.error("Create failed:", err.response || err);
-                alert("Create failed: " + JSON.stringify(err.response?.data || err.message));
+                alert("Create failed");
             });
     };
 
@@ -51,10 +51,7 @@ export default function UsersPage() {
 
         deleteUser(id)
             .then(load)
-            .catch(err => {
-                console.error("Delete failed:", err.response || err);
-                alert("Delete failed: " + JSON.stringify(err.response?.data || err.message));
-            });
+            .catch(err => console.error(err));
 
         resetForm();
     };
@@ -75,6 +72,7 @@ export default function UsersPage() {
         setEmail(u.email);
         setRole(u.role);
         setCourseIds(u.courseIds || []);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // Save updates for a selected user
@@ -93,142 +91,214 @@ export default function UsersPage() {
                 resetForm();
                 load();
             })
-            .catch(err => {
-                console.error("Update failed:", err.response || err);
-                alert("Update failed: " + JSON.stringify(err.response?.data || err.message));
-            });
+            .catch(err => console.error(err));
+    };
+
+    // Helpers for UI
+    const getInitials = (name) => name ? name.substring(0, 2).toUpperCase() : "??";
+
+    const roleColors = {
+        admin: "bg-rose-100 text-rose-700 border-rose-200",
+        student: "bg-indigo-100 text-indigo-700 border-indigo-200",
+        visitor: "bg-slate-100 text-slate-700 border-slate-200"
     };
 
     return (
-        <div className="p-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="min-h-screen bg-slate-50 p-6 md:p-10 font-sans text-slate-800">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            {/* ===== Users List ===== */}
-            <div className="md:col-span-1">
-                <h2 className="text-2xl font-bold mb-4">Users</h2>
-                <ul className="space-y-2">
-                    {users.map(u => (
-                        <li
-                            key={u.id}
-                            onClick={() => editUser(u)}
-                            className={`p-3 rounded cursor-pointer border transition-all duration-200 ${
-                                selectedUser?.id === u.id
-                                    ? "bg-blue-50 border-blue-400 shadow"
-                                    : "bg-white hover:bg-gray-50"
-                            }`}
+                {/* ===== LEFT COLUMN: USERS LIST (Span 7) ===== */}
+                <div className="lg:col-span-7 space-y-6">
+
+                    {/* Header */}
+                    <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200 sticky top-4 z-10 flex justify-between items-center">
+                        <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-900 flex items-center gap-2">
+                            User Management
+                            <span className="text-sm font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full border border-slate-200">
+                                {users.length}
+                            </span>
+                        </h2>
+                        <button
+                            onClick={resetForm}
+                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                         >
-                            <h3 className="font-semibold">{u.name}</h3>
-                            <p className="text-gray-500 text-sm">{u.email}</p>
-                            <p className="text-gray-400 text-xs mt-1">Role: {u.role}</p>
-                            {u.courseIds?.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                    {u.courseIds.map(cid => {
-                                        const course = courses.find(c => c.id === cid);
-                                        return (
-                                            <span
-                                                key={cid}
-                                                className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
-                                            >
-                        {course?.title || "Unknown"}
-                      </span>
-                                        );
-                                    })}
+                            + New User
+                        </button>
+                    </div>
+
+                    {/* Users Grid */}
+                    <div className="space-y-4">
+                        {users.map(u => (
+                            <div
+                                key={u.id}
+                                onClick={() => editUser(u)}
+                                className={`group relative p-5 bg-white rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col sm:flex-row gap-4 ${
+                                    selectedUser?.id === u.id
+                                        ? "border-indigo-500 shadow-xl shadow-indigo-100 ring-1 ring-indigo-500 transform scale-[1.01]"
+                                        : "border-slate-100 hover:shadow-lg hover:border-indigo-200 hover:-translate-y-0.5"
+                                }`}
+                            >
+                                {/* Avatar */}
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-inner flex-shrink-0 ${
+                                    selectedUser?.id === u.id ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500"
+                                }`}>
+                                    {getInitials(u.name)}
                                 </div>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            </div>
 
-            {/* ===== User Details & Add/Edit Form ===== */}
-            <div className="md:col-span-2 space-y-6">
+                                <div className="flex-grow">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-slate-800 group-hover:text-indigo-700 transition-colors">
+                                                {u.name}
+                                            </h3>
+                                            <p className="text-slate-400 text-sm">{u.email}</p>
+                                        </div>
+                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border uppercase tracking-wide ${roleColors[u.role] || roleColors.visitor}`}>
+                                            {u.role}
+                                        </span>
+                                    </div>
 
-                {/* User Form */}
-                <div className="bg-white p-6 rounded shadow">
-                    <h2 className="text-xl font-bold mb-4">{selectedUser ? "Edit User" : "Add New User"}</h2>
-
-                    <div className="space-y-3">
-                        <input
-                            type="text"
-                            placeholder="Name"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            className="border w-full px-3 py-2 rounded"
-                        />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="border w-full px-3 py-2 rounded"
-                        />
-                        <select
-                            value={role}
-                            onChange={e => setRole(e.target.value)}
-                            className="border w-full px-3 py-2 rounded"
-                        >
-                            <option value="student">Student</option>
-                            <option value="visitor">Visitor</option>
-                            <option value="admin">Admin</option>
-                        </select>
-
-                        {/* Courses selection only for students */}
-                        {role === "student" && (
-                            <div>
-                                <label className="block font-semibold mb-2">Select Courses:</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {courses.map(c => (
-                                        <button
-                                            key={c.id}
-                                            type="button"
-                                            onClick={() => toggleCourse(c.id)}
-                                            className={`px-3 py-1 rounded-full border transition-colors duration-200 ${
-                                                courseIds.includes(c.id)
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                                            }`}
-                                        >
-                                            {c.title}
-                                        </button>
-                                    ))}
+                                    {/* Enrolled Courses Tags */}
+                                    {u.courseIds?.length > 0 && (
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {u.courseIds.map(cid => {
+                                                const course = courses.find(c => c.id === cid);
+                                                return (
+                                                    <span key={cid} className="px-2 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded text-xs font-medium flex items-center gap-1">
+                                                        📚 {course?.title || "Unknown"}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                        ))}
+                    </div>
+                </div>
 
-                        <div className="flex gap-3 mt-3">
-                            {selectedUser ? (
-                                <>
-                                    <button
-                                        onClick={saveUser}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                                    >
-                                        Save Changes
-                                    </button>
+                {/* ===== RIGHT COLUMN: FORM (Span 5) ===== */}
+                <div className="lg:col-span-5">
+                    <div className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-6">
 
-                                    <button
-                                        onClick={() => removeUser(selectedUser.id)}
-                                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                                    >
-                                        Delete User
-                                    </button>
-
-                                    <button
-                                        onClick={resetForm}
-                                        className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
-                                    >
-                                        Cancel
-                                    </button>
-                                </>
-                            ) : (
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800">
+                                    {selectedUser ? "Edit User" : "Create User"}
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide font-semibold">
+                                    {selectedUser ? "Update profile details" : "Register a new member"}
+                                </p>
+                            </div>
+                            {selectedUser && (
                                 <button
-                                    onClick={addUser}
-                                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                    onClick={resetForm}
+                                    className="text-xs font-medium text-slate-400 hover:text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
                                 >
-                                    Add User
+                                    Cancel
                                 </button>
                             )}
                         </div>
+
+                        <div className="space-y-5">
+                            {/* Name Input */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. John Doe"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                />
+                            </div>
+
+                            {/* Email Input */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    placeholder="john@example.com"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                />
+                            </div>
+
+                            {/* Role Select */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Role</label>
+                                <div className="relative">
+                                    <select
+                                        value={role}
+                                        onChange={e => setRole(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
+                                    >
+                                        <option value="student">🎓 Student</option>
+                                        <option value="visitor">👤 Visitor</option>
+                                        <option value="admin">🛡️ Admin</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">▼</div>
+                                </div>
+                            </div>
+
+                            {/* Course Selection (Only if Student) */}
+                            {role === "student" && (
+                                <div className="pt-2">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Enrolled Courses</label>
+                                    <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                                        {courses.map(c => (
+                                            <button
+                                                key={c.id}
+                                                type="button"
+                                                onClick={() => toggleCourse(c.id)}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                                    courseIds.includes(c.id)
+                                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200"
+                                                        : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+                                                }`}
+                                            >
+                                                {c.title}
+                                            </button>
+                                        ))}
+                                        {courses.length === 0 && (
+                                            <p className="text-sm text-slate-400 italic">No courses available.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Actions Buttons */}
+                            <div className="pt-4 flex gap-3">
+                                {selectedUser ? (
+                                    <>
+                                        <button
+                                            onClick={saveUser}
+                                            className="flex-1 py-3.5 px-6 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all transform active:scale-95"
+                                        >
+                                            Save Changes
+                                        </button>
+                                        <button
+                                            onClick={() => removeUser(selectedUser.id)}
+                                            className="py-3.5 px-4 rounded-xl font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-100 transition-colors"
+                                            title="Delete User"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={addUser}
+                                        className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-300 transition-all transform active:scale-95"
+                                    >
+                                        Create User
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </div>
     );
