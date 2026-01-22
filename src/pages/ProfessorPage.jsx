@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
     getProfessors,
     createProfessor,
+    updateProfessor, // Import ajouté
     deleteProfessor
 } from "../api/professorApi";
 
@@ -16,6 +17,7 @@ export default function ProfessorsPage() {
 
     const [form, setForm] = useState(emptyProfessor);
     const [list, setList] = useState([]);
+    const [editingId, setEditingId] = useState(null); // État pour savoir si on édite
 
     const load = () => {
         getProfessors().then(res => setList(res.data));
@@ -63,6 +65,31 @@ export default function ProfessorsPage() {
         setForm({ ...form, publications: pubs });
     };
 
+    // --- Edit Mode Logic ---
+    const handleEdit = (professor) => {
+        setEditingId(professor.id);
+
+        // Conversion importante : Backend Map -> Frontend Array
+        const pubsArray = professor.publications
+            ? Object.entries(professor.publications).map(([title, year]) => ({ title, year }))
+            : [{ title: "", year: "" }];
+
+        setForm({
+            name: professor.name,
+            bio: professor.bio,
+            skills: professor.skills || [""],
+            publications: pubsArray.length > 0 ? pubsArray : [{ title: "", year: "" }]
+        });
+
+        // Remonter en haut de page pour voir le formulaire
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const resetForm = () => {
+        setForm(emptyProfessor);
+        setEditingId(null);
+    };
+
     // --- Submit ---
     const submit = () => {
         const payload = {
@@ -77,11 +104,24 @@ export default function ProfessorsPage() {
             )
         };
 
-        createProfessor(payload).then(() => {
-            setForm(emptyProfessor);
-            load();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        if (editingId) {
+            // MODE UPDATE
+            updateProfessor(editingId, payload)
+                .then(() => {
+                    resetForm();
+                    load();
+                })
+                .catch(err => console.error("Update failed", err));
+        } else {
+            // MODE CREATE
+            createProfessor(payload)
+                .then(() => {
+                    resetForm();
+                    load();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                })
+                .catch(err => console.error("Create failed", err));
+        }
     };
 
     // Helper: Initials for avatar
@@ -92,7 +132,7 @@ export default function ProfessorsPage() {
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                 {/* ===== LEFT COLUMN: LIST (Span 7) ===== */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="lg:col-span-7 space-y-6 order-2 lg:order-1">
 
                     {/* Header */}
                     <div className="bg-white/80 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200 sticky top-4 z-10">
@@ -107,7 +147,7 @@ export default function ProfessorsPage() {
                     {/* Professors Cards */}
                     <div className="grid grid-cols-1 gap-5">
                         {list.map(p => (
-                            <div key={p.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300">
+                            <div key={p.id} className={`bg-white p-6 rounded-2xl border transition-all duration-300 ${editingId === p.id ? 'border-indigo-500 ring-1 ring-indigo-500 shadow-xl' : 'border-slate-100 shadow-sm hover:shadow-lg'}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center font-bold text-lg shadow-inner">
@@ -118,19 +158,30 @@ export default function ProfessorsPage() {
                                             <p className="text-sm text-slate-500 line-clamp-2 max-w-md">{p.bio}</p>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => deleteProfessor(p.id).then(load)}
-                                        className="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition-colors"
-                                        title="Delete Professor"
-                                    >
-                                        🗑
-                                    </button>
+
+                                    <div className="flex gap-2">
+                                        {/* Bouton EDIT */}
+                                        <button
+                                            onClick={() => handleEdit(p)}
+                                            className="text-slate-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                                            title="Edit Professor"
+                                        >
+                                            ✏️
+                                        </button>
+                                        {/* Bouton DELETE */}
+                                        <button
+                                            onClick={() => deleteProfessor(p.id).then(load)}
+                                            className="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition-colors"
+                                            title="Delete Professor"
+                                        >
+                                            🗑
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Skills Tags */}
                                 {p.skills && p.skills.length > 0 && (
                                     <div className="mb-4">
-                                        <p className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">Expertise</p>
                                         <div className="flex flex-wrap gap-2">
                                             {p.skills.map((s, i) => (
                                                 <span key={i} className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-100 rounded-lg text-xs font-semibold">
@@ -144,42 +195,42 @@ export default function ProfessorsPage() {
                                 {/* Publications List */}
                                 {p.publications && Object.keys(p.publications).length > 0 && (
                                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                        <p className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide flex items-center gap-1">
-                                            📖 Recent Publications
-                                        </p>
-                                        <ul className="space-y-2">
-                                            {Object.entries(p.publications).slice(0, 3).map(([title, year], i) => (
-                                                <li key={i} className="text-sm text-slate-600 flex justify-between items-center">
-                                                    <span className="truncate mr-4 font-medium italic">"{title}"</span>
-                                                    <span className="bg-white px-2 py-0.5 rounded text-xs text-slate-400 border border-slate-200">{year}</span>
+                                        <ul className="space-y-1">
+                                            {Object.entries(p.publications).slice(0, 2).map(([title, year], i) => (
+                                                <li key={i} className="text-sm text-slate-600 flex justify-between">
+                                                    <span className="truncate mr-4 italic">"{title}"</span>
+                                                    <span className="font-bold text-xs text-slate-400">{year}</span>
                                                 </li>
                                             ))}
-                                            {Object.keys(p.publications).length > 3 && (
-                                                <li className="text-xs text-indigo-500 pt-1 font-medium">
-                                                    + {Object.keys(p.publications).length - 3} more...
-                                                </li>
-                                            )}
                                         </ul>
                                     </div>
                                 )}
                             </div>
                         ))}
-
-                        {list.length === 0 && (
-                            <div className="text-center py-12 text-slate-400">
-                                No professors registered yet.
-                            </div>
-                        )}
                     </div>
                 </div>
 
                 {/* ===== RIGHT COLUMN: FORM (Span 5) ===== */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 order-1 lg:order-2">
                     <div className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-6">
 
-                        <div className="mb-6 border-b border-slate-100 pb-4">
-                            <h2 className="text-xl font-bold text-slate-800">Add Professor</h2>
-                            <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">New Faculty Profile</p>
+                        <div className="mb-6 border-b border-slate-100 pb-4 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800">
+                                    {editingId ? "Edit Professor" : "Add Professor"}
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">
+                                    {editingId ? "Update existing details" : "New Faculty Profile"}
+                                </p>
+                            </div>
+                            {editingId && (
+                                <button
+                                    onClick={resetForm}
+                                    className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200"
+                                >
+                                    Cancel
+                                </button>
+                            )}
                         </div>
 
                         <div className="space-y-5">
@@ -222,9 +273,7 @@ export default function ProfessorsPage() {
                                                 onChange={e => updateSkill(i, e.target.value)}
                                                 className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
                                             />
-                                            {form.skills.length > 1 && (
-                                                <button onClick={() => removeSkill(i)} className="text-slate-400 hover:text-rose-500 px-2">✕</button>
-                                            )}
+                                            <button onClick={() => removeSkill(i)} className="text-slate-400 hover:text-rose-500 px-2">✕</button>
                                         </div>
                                     ))}
                                 </div>
@@ -256,9 +305,7 @@ export default function ProfessorsPage() {
                                                     className="w-1/3 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
                                                 />
                                             </div>
-                                            {form.publications.length > 1 && (
-                                                <button onClick={() => removePublication(i)} className="text-slate-400 hover:text-rose-500 px-2 mt-2">✕</button>
-                                            )}
+                                            <button onClick={() => removePublication(i)} className="text-slate-400 hover:text-rose-500 px-2 mt-2">✕</button>
                                         </div>
                                     ))}
                                 </div>
@@ -266,9 +313,13 @@ export default function ProfessorsPage() {
 
                             <button
                                 onClick={submit}
-                                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-300 transition-all transform active:scale-95 mt-4"
+                                className={`w-full py-3.5 px-6 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 mt-4 ${
+                                    editingId
+                                        ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
+                                        : "bg-slate-900 hover:bg-slate-800 shadow-slate-300"
+                                }`}
                             >
-                                💾 Save Professor
+                                {editingId ? "💾 Save Changes" : "🚀 Create Professor"}
                             </button>
                         </div>
                     </div>

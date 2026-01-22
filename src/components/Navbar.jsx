@@ -2,7 +2,6 @@ import { NavLink } from "react-router-dom";
 
 export default function Navbar() {
 
-    // Composant helper pour éviter la répétition et gérer l'état actif
     const NavItem = ({ to, icon, label }) => (
         <NavLink
             to={to}
@@ -26,10 +25,10 @@ export default function Navbar() {
                 {/* LOGO */}
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200">
-                        X
+                        SI
                     </div>
                     <h1 className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 tracking-tight">
-                        XML CMS
+                        CMS APP
                     </h1>
                 </div>
 
@@ -41,7 +40,7 @@ export default function Navbar() {
                     <NavItem to="/professors" icon="👨‍🏫" label="Professors" />
                 </div>
 
-                {/* USER PROFILE (Décoratif) */}
+
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                     <div className="text-right hidden sm:block">
                         <p className="text-xs font-bold text-slate-700">Admin User</p>
